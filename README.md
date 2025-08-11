@@ -1,27 +1,27 @@
-# Zabbix 7.2 in Docker + Windows-CA (UI) + Mini-CA (agents)
+# 🇷🇺 Zabbix 7.2 в Docker + Windows-CA (UI) + Mini-CA (агенты) 🐳🔒
 
 **UI FQDN:** `monitoring.optima.inside`  
-**Windows CA:** `ek-ca-01.optima.inside` (domain: `optima.inside`)
+**Windows CA:** `ek-ca-01.optima.inside` (домен: `optima.inside`)
 
-## Contents
+## 📦 Состав
 - `zabbix-server` + `zabbix-web` (alpine-7.2-latest)
-- `nginx` TLS termination with Windows-CA server cert
-- mTLS to agents using our own mini-CA (clientAuth)
-- External PostgreSQL database connection
-- Scripts: CSR for server, mini-CA init/issue/revoke, export/restore DB
+- `nginx` с TLS-терминацией и серверным сертификатом от Windows-CA
+- mTLS для агентов с использованием собственного mini-CA (clientAuth)
+- Внешнее подключение к базе данных PostgreSQL
+- Скрипты: создание CSR для сервера, инициализация/выдача/отзыв mini-CA, экспорт/восстановление БД
 
-## Quick start
-1. Copy `.env.example` → `.env` and set DB credentials.
-2. Generate CSR for **server** and request Windows-CA cert:
+## 🚀 Быстрый старт
+1. Скопируйте `.env.example` → `.env` и укажите параметры БД.
+2. Сгенерируйте CSR для **сервера** и запросите сертификат у Windows-CA:
    ```bash
    ./scripts/gen_server_csr.sh
-   # submit tls/server.csr.pem to ek-ca-01.optima.inside (template: Web Server)
-   # put resulting cert/chain here:
+   # отправьте tls/server.csr.pem на ek-ca-01.optima.inside (шаблон: Web Server)
+   # поместите полученные сертификаты/цепочку сюда:
    #   secrets/server/server.crt.pem
-   #   secrets/server/server.key.pem  (move from tls/server.key.pem)
-   #   secrets/server/server.fullchain.pem  (cert + intermediate)
+   #   secrets/server/server.key.pem  (переместить из tls/server.key.pem)
+   #   secrets/server/server.fullchain.pem  (сертификат + промежуточный)
    ```
-   *From PFX alternative:*
+   *Альтернатива из PFX:*
    ```bash
    openssl pkcs12 -in server.pfx -nocerts -nodes -out tls/server.key.pem
    openssl pkcs12 -in server.pfx -clcerts -nokeys -out tls/server.crt.pem
@@ -31,35 +31,35 @@
    cp tls/server.key.pem secrets/server/server.key.pem
    chmod 600 secrets/server/server.key.pem
    ```
-3. Init **mini-CA** for agents and issue at least one client cert:
+3. Инициализируйте **mini-CA** для агентов и выпустите хотя бы один клиентский сертификат:
    ```bash
    ./pki/init_ca.sh
    ./pki/issue_agent_cert.sh host1.optima.inside
    cp pki/certs/agents-ca.crt.pem secrets/agents-ca/agents-ca.crt.pem
-   # (optional CRL) ./pki/revoke_agent_cert.sh <CN> -> copy pki/crl/agents-ca.crl.pem to secrets/agents-ca/
+   # (опционально CRL) ./pki/revoke_agent_cert.sh <CN> -> скопируйте pki/crl/agents-ca.crl.pem в secrets/agents-ca/
    ```
-4. Bring up stack:
+4. Запустите стек:
    ```bash
    docker compose up -d
    ```
-5. Open UI: `https://monitoring.optima.inside`
+5. Откройте UI: `https://monitoring.optima.inside`
 
-## Zabbix host encryption setup
-For each host in Zabbix → **Encryption**:
+## 🖥️ Настройка шифрования хоста Zabbix
+Для каждого хоста в Zabbix → **Encryption**:
 - Connections to host: **Certificate**
-- Issuer: exact Issuer string from agent cert (our mini-CA), e.g.:
+- Issuer: точная строка Issuer из сертификата агента (наш mini-CA), например:
   ```bash
   openssl x509 -in pki/certs/host1.optima.inside.crt.pem -noout -issuer -nameopt RFC2253
   ```
-- Subject: exact Subject string from the agent cert:
+- Subject: точная строка Subject из сертификата агента:
   ```bash
   openssl x509 -in pki/certs/host1.optima.inside.crt.pem -noout -subject -nameopt RFC2253
   ```
 
-## Agent config example (Linux)
+## 🐧 Пример конфига агента (Linux)
 ```
-Server=<IP_or_FQDN_of_Zabbix_server>
-ServerActive=<IP_or_FQDN_of_Zabbix_server>
+Server=<IP_или_FQDN_сервера_Zabbix>
+ServerActive=<IP_или_FQDN_сервера_Zabbix>
 TLSConnect=cert
 TLSAccept=cert
 TLSCAFile=/etc/zabbix/tls/agents-ca.crt.pem
@@ -67,19 +67,19 @@ TLSCertFile=/etc/zabbix/tls/host1.optima.inside.crt.pem
 TLSKeyFile=/etc/zabbix/tls/host1.optima.inside.key.pem
 ```
 
-## DB migration (old systemd install → here)
-Export on old host:
+## 🗄️ Миграция БД (со старой systemd-установки → сюда)
+Экспорт на старом хосте:
 ```
 ./scripts/export_old_zabbix_pg.sh --dir backups
 ```
-Restore depends on your DB placement. If you run a Postgres container, see `scripts/restore_zabbix_pg.sh`.
+Восстановление зависит от размещения вашей БД. Если вы используете контейнер Postgres, смотрите `scripts/restore_zabbix_pg.sh`.
 
-## If ZBX_TLS* envs are ignored
-Use config-file override:
-- edit `conf/zabbix_server.extra.conf.example` and mount it as `/etc/zabbix/zabbix_server.conf` in `docker-compose.yml`, plus DB settings.
-- keep volumes for certs/keys as in compose.
+## ⚠️ Если переменные окружения ZBX_TLS* игнорируются
+Используйте override-файл конфига:
+- отредактируйте `conf/zabbix_server.extra.conf.example` и смонтируйте его как `/etc/zabbix/zabbix_server.conf` в `docker-compose.yml`, плюс параметры БД.
+- оставьте volume для сертификатов/ключей как в compose.
 
-## Security
-- Never commit `secrets/`, `.env`, private keys.
-- Set `chmod 600` on private keys.
-- Keep CRL up to date if you revoke agent certs.
+## 🔐 Безопасность
+- Никогда не коммитьте `secrets/`, `.env`, приватные ключи.
+- Устанавливайте `chmod 600` на приватные ключи.
+- Держите CRL актуальным при отзыве сертификатов
