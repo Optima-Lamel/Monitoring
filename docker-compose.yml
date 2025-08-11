@@ -1,0 +1,56 @@
+services:
+  zabbix-server:
+    image: zabbix/zabbix-server-pgsql:alpine-7.2-latest
+    restart: unless-stopped
+    environment:
+      DB_SERVER_HOST: ${DB_SERVER_HOST}
+      DB_SERVER_PORT: ${DB_SERVER_PORT:-5432}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      TZ: ${TZ:-Europe/Amsterdam}
+
+      # TLS/mTLS settings (may be ignored by some tags; see README for config-file alternative)
+      ZBX_TLSCAFILE: /etc/zabbix/tls/agents-ca.crt.pem
+      ZBX_TLSCRLFILE: /etc/zabbix/tls/agents-ca.crl.pem
+      ZBX_TLSCERTFILE: /etc/zabbix/tls/server.crt.pem
+      ZBX_TLSKEYFILE: /etc/zabbix/tls/server.key.pem
+    volumes:
+      - ./secrets/agents-ca/agents-ca.crt.pem:/etc/zabbix/tls/agents-ca.crt.pem:ro
+      - ./secrets/agents-ca/agents-ca.crl.pem:/etc/zabbix/tls/agents-ca.crl.pem:ro
+      - ./secrets/server/server.crt.pem:/etc/zabbix/tls/server.crt.pem:ro
+      - ./secrets/server/server.key.pem:/etc/zabbix/tls/server.key.pem:ro
+    networks: [zbx-net]
+
+  zabbix-web:
+    image: zabbix/zabbix-web-nginx-pgsql:alpine-7.2-latest
+    restart: unless-stopped
+    environment:
+      DB_SERVER_HOST: ${DB_SERVER_HOST}
+      DB_SERVER_PORT: ${DB_SERVER_PORT:-5432}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      ZBX_SERVER_HOST: zabbix-server
+      ZBX_SERVER_NAME: ${ZBX_SERVER_NAME}
+      PHP_TZ: ${TZ:-Europe/Amsterdam}
+    depends_on: [zabbix-server]
+    networks: [zbx-net]
+
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    ports:
+      - "443:443"
+    environment:
+      - ZABBIX_FQDN=${ZABBIX_FQDN}
+    volumes:
+      - ./conf/nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./secrets/server/server.fullchain.pem:/etc/nginx/tls/server.crt:ro
+      - ./secrets/server/server.key.pem:/etc/nginx/tls/server.key:ro
+    depends_on: [zabbix-web]
+    networks: [zbx-net]
+
+networks:
+  zbx-net:
+    driver: bridge

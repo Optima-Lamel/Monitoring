@@ -1,0 +1,14 @@
+.env
+secrets/
+pki/private/
+pki/index.txt*
+pki/serial*
+pki/newcerts/
+pki/csr/
+backups/
+tls/*.key
+tls/*.pfx
+tls/*.p12
+*.dump
+*.sql
+*.crt
