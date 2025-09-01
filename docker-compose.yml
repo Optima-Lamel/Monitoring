@@ -1,7 +1,6 @@
-
 services:
   postgres:
-    image: postgres:16-alpine
+    image: postgres:17.5-alpine
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
@@ -21,7 +20,10 @@ services:
       retries: 5
 
   zabbix-server:
-    image: zabbix/zabbix-server-pgsql:alpine-7.2-latest
+    image: zabbix/zabbix-server-pgsql:alpine-7.4-latest
+    user: "0:0"
+    ports:
+      - "10051:10051"
     restart: unless-stopped
     depends_on:
       postgres:
@@ -36,21 +38,18 @@ services:
 
       # mTLS к агентам: доверяем нашему mini-CA; cert/key сервера — от Windows-CA
       # Если конкретный тег образа игнорирует эти переменные — см. conf/zabbix_server.extra.conf.example
-      ZBX_TLSCAFILE: /etc/zabbix/tls/agents-ca.crt.pem
-      ZBX_TLSCRLFILE: /etc/zabbix/tls/agents-ca.crl.pem
-      ZBX_TLSCERTFILE: /etc/zabbix/tls/server.crt.pem
-      ZBX_TLSKEYFILE: /etc/zabbix/tls/server.key.pem
+      ZBX_TLSCAFILE: /etc/zabbix/ssl/ca.crt
+      ZBX_TLSCERTFILE: /etc/zabbix/ssl/server.crt
+      ZBX_TLSKEYFILE: /etc/zabbix/ssl/server.key
     volumes:
-      - ./secrets/agents-ca/agents-ca.crt.pem:/etc/zabbix/tls/agents-ca.crt.pem:ro,Z
-      - ./secrets/agents-ca/agents-ca.crl.pem:/etc/zabbix/tls/agents-ca.crl.pem:ro,Z
-      - ./secrets/server/server.crt.pem:/etc/zabbix/tls/server.crt.pem:ro,Z
-      - ./secrets/server/server.key.pem:/etc/zabbix/tls/server.key.pem:ro,Z
-      # Альтернатива через конфиг (раскомментируйте при необходимости):
-      # - ./conf/zabbix_server.extra.conf.example:/etc/zabbix/zabbix_server.conf:ro,Z
+      - /opt/zabbix/ssl/zabbix_agentd.psk:/etc/zabbix/zabbix_agentd.psk:ro,Z
+      - ./secrets/server/ca.crt:/etc/zabbix/ssl/ca.crt:ro,z
+      - ./secrets/server/server.cer.pem:/etc/zabbix/ssl/server.crt:ro,z
+      - ./secrets/server/server.key.pem:/etc/zabbix/ssl/server.key:ro,z
     networks: [zbx-net]
 
   zabbix-web:
-    image: zabbix/zabbix-web-nginx-pgsql:alpine-7.2-latest
+    image: zabbix/zabbix-web-nginx-pgsql:alpine-7.4-latest
     restart: unless-stopped
     depends_on:
       - zabbix-server
@@ -62,7 +61,12 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
       ZBX_SERVER_HOST: zabbix-server
       ZBX_SERVER_NAME: ${ZBX_SERVER_NAME}
+#      LDAPTLS_CACERT: /etc/ssl/certs/optima-ca.crt
       PHP_TZ: ${TZ:-Asia/Yekaterinburg}
+
+#    volumes:
+#      -./secrets/server/ca.cer:/etc/ssl/certs/optima-ca.cer:ro,Z
+
     networks: [zbx-net]
 
   nginx:
@@ -76,8 +80,9 @@ services:
       - ZABBIX_FQDN=${ZABBIX_FQDN}
     volumes:
       - ./conf/nginx/conf.d:/etc/nginx/conf.d:ro,Z
-      - ./secrets/server/server.fullchain.pem:/etc/nginx/tls/server.crt:ro,Z
-      - ./secrets/server/server.key.pem:/etc/nginx/tls/server.key:ro,Z
+      - ./secrets/server/server.cer.pem:/etc/nginx/server.crt:ro,Z
+      - ./secrets/server/server.key.pem:/etc/nginx/server.key:ro,Z
+      - ./secrets/server/ca.crt:/etc/nginx/ca.crt:ro,Z
     networks: [zbx-net]
 
 networks:
@@ -87,4 +92,3 @@ networks:
 volumes:
   zbx-pgdata:
     driver: local
-
