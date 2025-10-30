@@ -72,10 +72,11 @@ services:
     environment:
       - ZABBIX_FQDN=${ZABBIX_FQDN}
     volumes:
-      - ./conf/nginx/conf.d:/etc/nginx/conf.d:ro,Z
-      - ./secrets/server/server.cer.pem:/etc/nginx/server.crt:ro,Z
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro,Z
+      - ./secrets/server/server.crt.pem:/etc/nginx/server.crt:ro,Z
       - ./secrets/server/server.key.pem:/etc/nginx/server.key:ro,Z
-      - ./secrets/server/ca.crt:/etc/nginx/ca.crt:ro,Z
+      - ./secrets/server/server.fullchain.pem:/etc/nginx/ca.crt:ro,Z
+      - ./tls:/etc/nginx/tls:ro,Z
     networks: [zbx-net]
 
 networks:
