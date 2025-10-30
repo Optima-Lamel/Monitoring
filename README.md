@@ -25,7 +25,8 @@
 │       ├── server.key.pem   # Приватный ключ сервера
 │       └── server.fullchain.pem  # Полная цепочка сертификатов
 ├── tls/                     # Файлы для работы с TLS
-│   └── openssl.conf        # Конфиг для генерации CSR
+│   ├── openssl.conf       # Конфиг для генерации CSR
+│   └── zabbix_agentd.psk # Предварительно согласованный ключ (PSK)
 ├── .env                     # Переменные окружения (локальный)
 ├── .env.example            # Пример переменных окружения
 ├── docker-compose.yml      # Конфигурация Docker-контейнеров
@@ -99,8 +100,8 @@
 3. **Создание PSK для агентов:**
 
    ```shell
-   openssl rand -hex 32 > /opt/zabbix/ssl/zabbix_agentd.psk
-   # или используйте свой путь, но не коммитьте этот файл!
+   openssl rand -hex 32 > ./tls/zabbix_agentd.psk
+   chmod 600 ./tls/zabbix_agentd.psk
    ```
 
 4. **Запуск служб:**
@@ -122,7 +123,7 @@
 
 - Подключения к узлу сети: **PSK**
 - Идентификатор PSK: строка-идентификатор (например, `zabbix-psk`)
-- PSK: содержимое файла `/opt/zabbix/ssl/zabbix_agentd.psk`
+- PSK: содержимое файла `./tls/zabbix_agentd.psk`
 
 ### Пример конфигурации агента (Linux)
 
@@ -132,7 +133,7 @@ ServerActive=<IP_или_FQDN_сервера_Zabbix>
 TLSConnect=psk
 TLSAccept=psk
 TLSPSKIdentity=zabbix-psk
-TLSPSKFile=/etc/zabbix/zabbix_agentd.psk
+TLSPSKFile=/etc/zabbix/tls/zabbix_agentd.psk
 ```
 
 ---

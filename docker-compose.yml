@@ -38,7 +38,7 @@ services:
 
       # PSK для шифрования связи с агентами
     volumes:
-      - /opt/zabbix/ssl/zabbix_agentd.psk:/etc/zabbix/zabbix_agentd.psk:ro,Z
+      - ./tls/zabbix_agentd.psk:/etc/zabbix/zabbix_agentd.psk:ro,Z
     networks: [zbx-net]
 
   zabbix-web:
