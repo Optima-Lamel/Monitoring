@@ -49,29 +49,17 @@
    a. Создайте файл конфигурации `tls/openssl.conf`:
 
    ```ini
-   [ req ]
-   default_bits       = 4096
-   default_keyfile    = private.key
-   distinguished_name = req_distinguished_name
-   req_extensions     = req_ext
-   prompt            = no
-
-   [ req_distinguished_name ]
-   C  = RU
-   ST = Yekaterinburg
-   L  = Yekaterinburg
-   O  = OPTIMA
-   OU = IT Department
-   CN = domain.optima.inside
-
-   [ req_ext ]
-   subjectAltName = @alt_names
-
-   [ alt_names ]
-   DNS.1 = optima
-   DNS.2 = optima.inside
-   DNS.3 = domain.optima.inside
+   # Конфиг уже подготовлен в файле tls/openssl.conf
+   # Для изменения параметров отредактируйте значения в секциях:
+   # - req_distinguished_name (C, ST, L, O, OU, CN)
+   # - alt_names (DNS.*)
    ```
+
+   > 💡 **Важно:** Обязательно измените значения в `openssl.conf` под ваши требования, особенно:
+   > - Местоположение (ST, L)
+   > - Организацию (O, OU)
+   > - Доменные имена (CN и DNS.*)
+   
 
    b. Сгенерируйте ключ и CSR:
 
