@@ -36,16 +36,9 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
       TZ: ${TZ:-Asia/Yekaterinburg}
 
-      # mTLS к агентам: доверяем нашему mini-CA; cert/key сервера — от Windows-CA
-      # Если конкретный тег образа игнорирует эти переменные — см. conf/zabbix_server.extra.conf.example
-      ZBX_TLSCAFILE: /etc/zabbix/ssl/ca.crt
-      ZBX_TLSCERTFILE: /etc/zabbix/ssl/server.crt
-      ZBX_TLSKEYFILE: /etc/zabbix/ssl/server.key
+      # PSK для шифрования связи с агентами
     volumes:
       - /opt/zabbix/ssl/zabbix_agentd.psk:/etc/zabbix/zabbix_agentd.psk:ro,Z
-      - ./secrets/server/ca.crt:/etc/zabbix/ssl/ca.crt:ro,z
-      - ./secrets/server/server.cer.pem:/etc/zabbix/ssl/server.crt:ro,z
-      - ./secrets/server/server.key.pem:/etc/zabbix/ssl/server.key:ro,z
     networks: [zbx-net]
 
   zabbix-web:
