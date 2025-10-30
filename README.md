@@ -88,23 +88,31 @@ TLSPSKFile=/etc/zabbix/zabbix_agentd.psk
    # Укажите параметры БД и сервера в .env
    ```
 
-2. **Генерация CSR для сервера и получение сертификата от Windows-CA:**
-   ```bash
-   ./scripts/gen_server_csr.sh
-   # Отправьте tls/server.csr.pem на Ваш CA (шаблон: Web Server)
-   # Поместите полученные файлы:
-   #   secrets/server/server.crt.pem
-   #   secrets/server/server.key.pem  (из tls/server.key.pem)
-   #   secrets/server/server.fullchain.pem  (сертификат + цепочка)
+2. **Генерация сертификата для веб-интерфейса:**
+
+   ```shell
+   # 1. Создаем приватный ключ
+   openssl genrsa -out secrets/server/server.key.pem 2048
+   chmod 600 secrets/server/server.key.pem
+
+   # 2. Создаем CSR (на основе вашего конфига)
+   openssl req -new -key secrets/server/server.key.pem \
+     -out tls/server.csr.pem \
+     -config tls/openssl.conf
+
+   # После получения сертификата от CA:
+   cp server.crt.pem secrets/server/server.crt.pem
+   cat server.crt.pem chain.pem > secrets/server/server.fullchain.pem
    ```
-   *Альтернатива из PFX:*
-   ```bash
-   openssl pkcs12 -in server.pfx -nocerts -nodes -out tls/server.key.pem
-   openssl pkcs12 -in server.pfx -clcerts -nokeys -out tls/server.crt.pem
-   openssl pkcs12 -in server.pfx -cacerts -nokeys -out tls/chain.pem
-   cat tls/server.crt.pem tls/chain.pem > secrets/server/server.fullchain.pem
-   cp tls/server.crt.pem secrets/server/server.crt.pem
-   cp tls/server.key.pem secrets/server/server.key.pem
+
+   *Альтернативный вариант из PFX:*
+
+   ```shell
+   # Извлечение из PFX
+   openssl pkcs12 -in server.pfx -nocerts -nodes -out secrets/server/server.key.pem
+   openssl pkcs12 -in server.pfx -clcerts -nokeys -out secrets/server/server.crt.pem
+   openssl pkcs12 -in server.pfx -cacerts -nokeys -out chain.pem
+   cat secrets/server/server.crt.pem chain.pem > secrets/server/server.fullchain.pem
    chmod 600 secrets/server/server.key.pem
    ```
 
@@ -146,36 +154,18 @@ TLSPSKFile=/etc/zabbix/zabbix_agentd.psk
 
 ---
 
-## 🗄️ Миграция БД (со старой systemd-установки)
 
-**Экспорт на старом сервере:**
-```
-./scripts/export_old_zabbix_pg.sh --dir backups
-```
-**Восстановление:**  
-Если используется контейнер Postgres — смотрите `scripts/restore_zabbix_pg.sh`.
-
----
-
-## ⚠️ Если переменные окружения ZBX_TLS* игнорируются
-
-Используйте override-файл конфига:
-- Отредактируйте `conf/zabbix_server.extra.conf.example` и смонтируйте его как `/etc/zabbix/zabbix_server.conf` в `docker-compose.yml`, плюс параметры БД.
-- Оставьте volume для сертификатов/ключей как в compose.
-
----
 
 ## 🔐 Безопасность
 
-- Никогда не коммитьте `secrets/`, `.env`, приватные ключи и PSK-файлы.
-- Устанавливайте `chmod 600` на приватные ключи и PSK.
-- Меняйте PSK при необходимости.
-
----
+- Никогда не коммитьте `secrets/`, `.env`, приватные ключи и PSK-файлы
+- Устанавливайте `chmod 600` на приватные ключи и PSK
+- Периодически меняйте PSK для повышения безопасности
+- Храните все сертификаты и ключи в папке `secrets/` согласно структуре
+- Используйте только актуальные сертификаты для TLS-терминации в Nginx
 
 ## 📝 Примечания
 
-- Все контейнеры объединены в одну сеть `zbx-net`.
-- Для хранения данных Postgres используется volume `zbx-pgdata`.
-- Сертификаты и ключи должны быть размещены в папке `secrets/` согласно структуре.
-- Для работы с TLS (UI) используйте только актуальные сертификаты и ключи.
+- Все контейнеры объединены в одну сеть `zbx-net`
+- Для хранения данных Postgres используется volume `zbx-pgdata`
+- PSK-файлы должны быть защищены и доступны только необходимым пользователям
