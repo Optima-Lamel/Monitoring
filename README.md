@@ -22,8 +22,7 @@
 ├── secrets/                  # Секреты (не коммитить в Git!)
 │   └── server/              # Сертификаты и ключи сервера
 │       ├── server.crt.pem   # Сертификат сервера
-│       ├── server.key.pem   # Приватный ключ сервера
-│       └── server.fullchain.pem  # Полная цепочка сертификатов
+│       └── server.key.pem   # Приватный ключ сервера
 ├── tls/                     # Файлы для работы с TLS
 │   ├── openssl.conf       # Конфиг для генерации CSR
 │   └── zabbix_agentd.psk # Предварительно согласованный ключ (PSK)
@@ -81,9 +80,8 @@
    c. После получения сертификата от УЦ:
 
    ```shell
-   # Копирование сертификата и создание полной цепочки
+   # Копирование сертификата
    cp server.crt.pem secrets/server/server.crt.pem
-   cat server.crt.pem chain.pem > secrets/server/server.fullchain.pem
    ```
 
    *Вариант с PFX-сертификатом:*
@@ -92,8 +90,6 @@
    # Извлечение из PFX
    openssl pkcs12 -in server.pfx -nocerts -nodes -out secrets/server/server.key.pem
    openssl pkcs12 -in server.pfx -clcerts -nokeys -out secrets/server/server.crt.pem
-   openssl pkcs12 -in server.pfx -cacerts -nokeys -out chain.pem
-   cat secrets/server/server.crt.pem chain.pem > secrets/server/server.fullchain.pem
    chmod 600 secrets/server/server.key.pem
    ```
 

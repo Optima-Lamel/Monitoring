@@ -75,7 +75,6 @@ services:
       - ./nginx/conf.d:/etc/nginx/conf.d:ro,Z
       - ./secrets/server/server.crt.pem:/etc/nginx/server.crt:ro,Z
       - ./secrets/server/server.key.pem:/etc/nginx/server.key:ro,Z
-      - ./secrets/server/server.fullchain.pem:/etc/nginx/ca.crt:ro,Z
       - ./tls:/etc/nginx/tls:ro,Z
     networks: [zbx-net]
 
